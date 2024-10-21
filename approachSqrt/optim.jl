@@ -3,13 +3,15 @@ using Distributions
 include("../iGMRF.jl");
 
 function KLOptim(F::iGMRF, Y::Vector{Vector{Float64}})
+    m = F.G.m₁ * F.G.m₂;
     α = Optim.minimizer(initializeValues(θ -> densityTarget(θ, F=F, Y=Y), [1, fill(0.0, m)...]))
     calculationSpace = createCalculationSpace(α, 1000)
 
     function KLDivergence(θ::Vector{<:Real})
         # Distribution d'approximation
         η = θ[1:m+1];
-        Σ = diagm(θ[m+2:end].^2);
+        L = buildLowerTriangular(θ[m+2:end], m);
+        Σ = L*L';
         distApprox = MvNormal(η, Σ);
         
         # Évaluation des densités
@@ -19,10 +21,49 @@ function KLOptim(F::iGMRF, Y::Vector{Vector{Float64}})
     end;
 
     η₀ = α;
-    Σ₀ = sqrt.(diag(inv(computeFisherInformation(θ -> densityTarget(θ, F=F, Y=Y), α))));
+    Σ₀ = round.(inv(computeFisherInformation(θ -> densityTarget(θ, F=F, Y=Y), α)), digits=6);
+    l₀ = extractCholeskyComponents(Σ₀)
 
-    θ₀ = [η₀..., Σ₀...];
+    θ₀ = [η₀..., l₀...];
     res = optimize(KLDivergence, θ₀);
 
     return res
 end;
+
+
+"""
+    extractCholeskyComponents(Σ)
+
+Extracts components of the lower triangular side of a given matrix Σ.
+Store components in a vector.
+
+# Arguments
+-`Σ::Matrix`: Covariance matrix.
+"""
+function extractCholeskyComponents(Σ::Matrix)
+    L = cholesky(Σ).L;
+    return [L[i, j] for i = 1:m+1 for j = 1:i]
+end
+
+
+"""
+    buildLowerTriangular(components)
+
+Build a lower triangular matrix from a vector of components.
+
+# Arguments
+- `components::DenseVector`: coefficients of the lower triangular matrix.
+- `m::Integer`: 
+"""
+function buildLowerTriangular(components::DenseVector, m::Integer)
+    L = zeros(m+1, m+1);
+    ind = 1;
+    for i = 1:m+1
+        for j = 1:i
+            L[i, j] = components[ind];
+            ind += 1;
+        end
+    end
+    
+    return L
+end
