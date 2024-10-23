@@ -7,6 +7,7 @@ function densityTarget(θ::DenseVector; F::iGMRF, Y::Vector{Vector{Float64}})
         + ((length(θ)-1) - F.r) * θ[1] / 2 
         - exp(θ[1]) * θ[2:end]' * F.G.W * θ[2:end] / 2
         + logpdf(Gamma(1, 100), exp(θ[1]))
+        +1400
     )
 end;
 
@@ -34,7 +35,7 @@ Define α's neighborhood.
 - `N::Integer`: number of points of the calculation space.
 """
 function createCalculationSpace(α::DenseVector, N::Integer)
-    Σ = round.(inv(computeFisherInformation(θ -> densityTarget(θ, F=F, Y=Y), α)), digits=4)
+    Σ = round.(inv(computeFisherInformation(θ -> densityTarget(θ, F=F, Y=Y), α)) .* 3, digits=5)
     return rand(MvNormal(α, Σ), N)
 end;
 
