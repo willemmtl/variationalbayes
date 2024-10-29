@@ -11,7 +11,7 @@ function KLOptim(F::iGMRF, Y::Vector{Vector{Float64}})
 
     Fvar = inv(computeFisherInformation(θ -> densityTarget(θ, gap, F=F, Y=Y), α));
 
-    calculationSpace = createCalculationSpace(α, Fvar, 10000);
+    calculationSpace = createCalculationSpace(α, Fvar, 1000);
 
     function KLDivergence(θ::Vector{<:Real})
         # Distribution d'approximation
