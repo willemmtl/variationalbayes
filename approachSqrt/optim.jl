@@ -4,8 +4,14 @@ include("../iGMRF.jl");
 
 function KLOptim(F::iGMRF, Y::Vector{Vector{Float64}})
     m = F.G.m₁ * F.G.m₂;
-    α = Optim.minimizer(initializeValues(θ -> densityTarget(θ, F=F, Y=Y), [1, fill(0.0, m)...]))
-    calculationSpace = createCalculationSpace(α, 1000)
+
+    mode = findMode(θ -> functionalFormPosterior(θ, F=F, Y=Y), [1, fill(0.0, m)...]);
+    α = Optim.minimizer(mode);
+    gap = Optim.minimum(mode);
+
+    Fvar = inv(computeFisherInformation(θ -> densityTarget(θ, gap, F=F, Y=Y), α));
+
+    calculationSpace = createCalculationSpace(α, Fvar, 10000);
 
     function KLDivergence(θ::Vector{<:Real})
         # Distribution d'approximation
@@ -15,13 +21,13 @@ function KLOptim(F::iGMRF, Y::Vector{Vector{Float64}})
         distApprox = MvNormal(η, Σ);
         
         # Évaluation des densités
-        p = vec(mapslices(x -> densityTarget(x, F=F, Y=Y), calculationSpace, dims=1))
+        p = vec(mapslices(x -> densityTarget(x, gap, F=F, Y=Y), calculationSpace, dims=1))
         q = vec(mapslices(x -> logpdf(distApprox, x), calculationSpace, dims=1))
         return kldiv(q, p)
     end;
 
     η₀ = α;
-    Σ₀ = round.(inv(computeFisherInformation(θ -> densityTarget(θ, F=F, Y=Y), α)), digits=6);
+    Σ₀ = round.(Fvar, digits=6);
     l₀ = extractCholeskyComponents(Σ₀)
 
     θ₀ = [η₀..., l₀...];
