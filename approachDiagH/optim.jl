@@ -20,7 +20,7 @@ function KLOptim(F::iGMRF, Y::Vector{Vector{Float64}})
         η = θ[1:m+1];
         Σ = diagm([θ[m+2]^2, fill(θ[m+3]^2, m)...]);
         distApprox = MvNormal(η, Σ);
-        
+
         # Évaluation des densités
         p = vec(mapslices(x -> densityTarget(x, gap, F=F, Y=Y), calculationSpace, dims=1))
         q = vec(mapslices(x -> logpdf(distApprox, x), calculationSpace, dims=1))
@@ -31,7 +31,7 @@ function KLOptim(F::iGMRF, Y::Vector{Vector{Float64}})
     Σ₀ = sqrt.(diag(Fvar));
 
     θ₀ = [η₀..., Σ₀[1], mean(Σ₀[2:end])];
-    res = optimize(KLDivergence, θ₀);
+    res = optimize(KLDivergence, θ₀, Newton(), autodiff=:forward);
 
     return res
 end;

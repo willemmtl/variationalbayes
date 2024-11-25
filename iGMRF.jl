@@ -106,8 +106,8 @@ function sampleIGMRF(F::iGMRF)::Vector{<:Real}
     # 1er vecteur propre de Q
     e₁ = ones(m, 1)
     A = e₁
-    # Création de la matrice de précision (impropre ??)
-    Q = F.κᵤ * F.G.W + e₁ * e₁' # ??
+    # Création de la matrice de précision
+    Q = F.κᵤ * F.G.W + e₁ * e₁'
     # Factorisation de cholesky
     C = cholesky(Q)
     L = C.L

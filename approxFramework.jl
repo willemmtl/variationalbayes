@@ -40,8 +40,10 @@ Define α's neighborhood.
 - `N::Integer`: number of points of the calculation space.
 """
 function createCalculationSpace(α::DenseVector, Fvar::Matrix{<:Real}, N::Integer)
-    Σ = round.(Fvar .* 3, digits=5)
-    return rand(MvNormal(α, Σ), N)
+    Σ = round.(Fvar .* .1 , digits=5);
+    calculationSpace = rand(MvNormal(α, Σ), N);
+    # On supprime les échantillons pour lesquels κ < 0
+    return calculationSpace[:, calculationSpace[1, :] .> 0]
 end;
 
 
